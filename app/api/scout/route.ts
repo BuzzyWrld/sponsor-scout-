@@ -104,17 +104,38 @@ export async function POST(req: Request) {
         guestCount: guestsJoined.length,
         connectionCount: connections.length,
         candidateCount: candidates.length,
+        candidates: candidates.map((c) => ({ id: c.id, name: c.name })),
       });
     }
+
+    // Quick scout: a hand-picked subset of candidates to keep the live ranking call short
+    // enough for a 2 minute demo. Trimming the candidate list alone barely moves latency,
+    // since guest_signals (120 people) and network_signals (300 connections) dominate the
+    // prompt regardless of candidate count. So for quick scout, also drop every guest and
+    // connection record that isn't a warm path match for one of the selected candidates.
+    // audience_profile (the aggregate stats) is unaffected: it's computed in code and still
+    // reflects the full real audience either way.
+    const candidateIdsRaw = form.get("candidateIds") as string | null;
+    const runCandidates = candidateIdsRaw
+      ? candidates.filter((c) => candidateIdsRaw.split(",").includes(c.id))
+      : candidates;
+    const runMatches = candidateIdsRaw ? matches.filter((m) => runCandidates.some((c) => c.id === m.candidateId)) : matches;
+
+    const matchedGuestIds = new Set(runMatches.flatMap((m) => m.viaGuestIds));
+    const matchedConnectionIds = new Set(runMatches.flatMap((m) => m.viaConnectionIds));
+    const runSafeGuests = candidateIdsRaw ? safeGuests.filter((g) => matchedGuestIds.has(g.id)) : safeGuests;
+    const runSafeConnections = candidateIdsRaw
+      ? safeConnections.filter((c) => matchedConnectionIds.has(c.id))
+      : safeConnections;
 
     const systemPrompt = buildSystemPrompt({
       audienceProfileJson: JSON.stringify(profile),
       eventsJson: JSON.stringify(EVENTS),
       offerJson: JSON.stringify(OFFER),
-      candidatesJson: JSON.stringify(candidates),
-      guestSignalsJson: JSON.stringify(safeGuests),
-      networkSignalsJson: JSON.stringify(safeConnections),
-      matchesJson: JSON.stringify(matches),
+      candidatesJson: JSON.stringify(runCandidates),
+      guestSignalsJson: JSON.stringify(runSafeGuests),
+      networkSignalsJson: JSON.stringify(runSafeConnections),
+      matchesJson: JSON.stringify(runMatches),
     });
     const userMessage = buildUserMessage(new Date().toISOString().slice(0, 10));
 
@@ -127,7 +148,7 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({
+    const payload = {
       mappingNotes,
       perEventMapping,
       coverage,
@@ -140,8 +161,28 @@ export async function POST(req: Request) {
       guestCount: guestsJoined.length,
       connectionCount: connections.length,
       candidateCount: candidates.length,
-    });
+      candidates: candidates.map((c) => ({ id: c.id, name: c.name })),
+      ranAt: new Date().toISOString(),
+      wasQuickScout: Boolean(candidateIdsRaw),
+    };
+
+    // A real run is expensive and slow right now (observed up to ~17 minutes on shared
+    // NEAR AI Cloud capacity during the hackathon). Persist it so a page reload, or a
+    // fresh demo run, never loses a real completed result.
+    mkdirSync("data", { recursive: true });
+    writeFileSync("data/last-run.json", JSON.stringify(payload, null, 2));
+
+    return NextResponse.json(payload);
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    const raw = readFileSync("data/last-run.json", "utf8");
+    return NextResponse.json(JSON.parse(raw));
+  } catch {
+    return NextResponse.json({ error: "no cached run yet" }, { status: 404 });
   }
 }

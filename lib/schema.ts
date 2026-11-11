@@ -49,7 +49,10 @@ export const PortfolioViewSchema = z.object({
 });
 
 export const ScoutOutputSchema = z.object({
-  ranked: z.array(RankedCandidateSchema).min(5).max(8),
+  // Normally 5 to 8 per the prompt instruction, but quick scout can send fewer candidates
+  // total (e.g. 5), so min(1) avoids a validation-triggered repair retry eating the time
+  // budget a quick scout exists to save.
+  ranked: z.array(RankedCandidateSchema).min(1).max(8),
   excluded: z.array(ExcludedCandidateSchema),
   portfolio_view: PortfolioViewSchema,
   data_gaps: z.array(z.string()),

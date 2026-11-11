@@ -19,13 +19,18 @@ type ProfileResponse = {
   guestCount: number;
   connectionCount: number;
   candidateCount: number;
+  candidates: { id: string; name: string }[];
 };
+
+const QUICK_SCOUT_DEFAULT_NAMES = ["MongoDB", "Fulton Bank", "Mercury", "Linear", "Athletic Brewing"];
 
 type RunResponse = ProfileResponse & {
   idMap: IdMapEntry[];
   scoutOutput: ScoutOutput;
   latencyMs: number;
   repaired: boolean;
+  ranAt?: string;
+  wasQuickScout?: boolean;
 };
 
 const EVENT_IDS = ["E1", "E2", "E3", "E4", "E5"] as const;
@@ -49,8 +54,9 @@ export default function Home() {
   const [guestFiles, setGuestFiles] = useState<Record<string, File | null>>({});
   const [processing, setProcessing] = useState(false);
   const [profileResp, setProfileResp] = useState<ProfileResponse | null>(null);
-  const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState<"full" | "quick" | null>(null);
   const [runResp, setRunResp] = useState<RunResponse | null>(null);
+  const [quickIds, setQuickIds] = useState<string[]>([]);
   const [showIdsOnly, setShowIdsOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const dragCounter = useRef(0);
@@ -60,11 +66,26 @@ export default function Home() {
       .then((r) => r.json())
       .then(setModelStatus)
       .catch(() => setModelStatus({ status: "NOT PRIVATE", error: "could not reach /api/models" }));
+
+    // A real run can take many minutes right now, so always try to load the last
+    // completed real result on page load instead of starting from a blank slate.
+    fetch("/api/scout")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json: RunResponse | null) => {
+        if (!json) return;
+        setProfileResp(json);
+        setRunResp(json);
+        setUsingFixtures(true);
+        const defaults = json.candidates.filter((c) => QUICK_SCOUT_DEFAULT_NAMES.includes(c.name)).map((c) => c.id);
+        setQuickIds(defaults.length > 0 ? defaults : json.candidates.slice(0, 5).map((c) => c.id));
+      })
+      .catch(() => {});
   }, []);
 
-  async function processData(mode: "profile" | "run", extraFiles = true) {
+  async function processData(mode: "profile" | "run", extraFiles = true, candidateIds?: string[]) {
     const form = new FormData();
     form.set("mode", mode);
+    if (candidateIds && candidateIds.length > 0) form.set("candidateIds", candidateIds.join(","));
     if (extraFiles) {
       if (connectionsFile) form.set("connections", connectionsFile);
       if (candidatesFile) form.set("candidates", candidatesFile);
@@ -79,6 +100,12 @@ export default function Home() {
     return json;
   }
 
+  function applyProfileResponse(json: ProfileResponse) {
+    setProfileResp(json);
+    const defaults = json.candidates.filter((c) => QUICK_SCOUT_DEFAULT_NAMES.includes(c.name)).map((c) => c.id);
+    setQuickIds(defaults.length > 0 ? defaults : json.candidates.slice(0, 5).map((c) => c.id));
+  }
+
   async function handleUseFixtures() {
     setError(null);
     setUsingFixtures(true);
@@ -86,7 +113,7 @@ export default function Home() {
     setRunResp(null);
     try {
       const json = await processData("profile", false);
-      setProfileResp(json);
+      applyProfileResponse(json);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -101,7 +128,7 @@ export default function Home() {
     setRunResp(null);
     try {
       const json = await processData("profile", true);
-      setProfileResp(json);
+      applyProfileResponse(json);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -109,17 +136,34 @@ export default function Home() {
     }
   }
 
-  async function handleRun() {
+  async function handleRunFull() {
     setError(null);
-    setRunning(true);
+    setRunning("full");
     try {
       const json = await processData("run", false);
       setRunResp(json);
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setRunning(false);
+      setRunning(null);
     }
+  }
+
+  async function handleQuickScout() {
+    setError(null);
+    setRunning("quick");
+    try {
+      const json = await processData("run", false, quickIds);
+      setRunResp(json);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRunning(null);
+    }
+  }
+
+  function toggleQuickId(id: string) {
+    setQuickIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   function handleDrop(setter: (f: File) => void) {
@@ -249,12 +293,43 @@ export default function Home() {
         {profileResp && (
           <section>
             <span className="section-label">step 3 · run</span>
-            <button className="run-button" onClick={handleRun} disabled={running || notPrivate}>
-              {running ? "running..." : "run the scout"}
-            </button>
-            {running && (
+
+            <div style={{ marginBottom: "1rem" }}>
+              <span className="mono">quick scout candidates ({quickIds.length} selected)</span>
+              <div className="chip-row" style={{ marginTop: "0.5rem" }}>
+                {profileResp.candidates.map((c) => (
+                  <label key={c.id} className="chip" style={{ cursor: "pointer", borderColor: quickIds.includes(c.id) ? "var(--bs-black)" : undefined }}>
+                    <input
+                      type="checkbox"
+                      checked={quickIds.includes(c.id)}
+                      onChange={() => toggleQuickId(c.id)}
+                      style={{ marginRight: "0.3rem" }}
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              <button className="run-button" onClick={handleQuickScout} disabled={running !== null || notPrivate || quickIds.length === 0}>
+                {running === "quick" ? "running quick scout..." : `quick scout (${quickIds.length})`}
+              </button>
+              <button className="export-btn" onClick={handleRunFull} disabled={running !== null || notPrivate}>
+                {running === "full" ? "running full scout..." : `run full scout (${profileResp.candidateCount})`}
+              </button>
+            </div>
+
+            {running === "quick" && (
               <p className="run-status">
-                sending {profileResp.guestCount} pseudonymized profiles to {modelStatus?.modelId} inside a TEE.
+                sending {profileResp.guestCount} pseudonymized profiles plus {quickIds.length} candidates to{" "}
+                {modelStatus?.modelId} inside a TEE. usually under a minute.
+              </p>
+            )}
+            {running === "full" && (
+              <p className="run-status">
+                sending {profileResp.guestCount} pseudonymized profiles plus all {profileResp.candidateCount} candidates
+                to {modelStatus?.modelId} inside a TEE. this model can take several minutes on the full set.
               </p>
             )}
             {notPrivate && <p className="run-status">model is not private. fix the model choice before running.</p>}
@@ -265,7 +340,9 @@ export default function Home() {
         {runResp && (
           <section>
             <span className="section-label">
-              step 4 · results ({runResp.latencyMs}ms{runResp.repaired ? ", repaired once" : ""})
+              step 4 · results ({(runResp.latencyMs / 1000).toFixed(1)}s{runResp.repaired ? ", repaired once" : ""}
+              {runResp.wasQuickScout ? ", quick scout" : ", full scout"}
+              {runResp.ranAt ? ` · ran ${new Date(runResp.ranAt).toLocaleTimeString()}` : ""})
             </span>
             <div className="toggle-row" style={{ marginBottom: "1rem" }}>
               <input type="checkbox" checked={showIdsOnly} onChange={(e) => setShowIdsOnly(e.target.checked)} />
