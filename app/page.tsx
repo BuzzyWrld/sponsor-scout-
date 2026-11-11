@@ -258,8 +258,8 @@ export default function Home() {
                 <span className="label">n approved</span>
               </div>
               <div className="stat-cell">
-                <span className="value">{overall.showRatePct}%</span>
-                <span className="label">show rate</span>
+                <span className="value">{profileResp?.profile.repeatAttendeeRate.pct ?? 0}%</span>
+                <span className="label">repeat attendees</span>
               </div>
               <div className="stat-cell">
                 <span className="value">{overall.roleMix.find((r) => r.label === "Founder")?.pct ?? 0}%</span>
@@ -282,8 +282,8 @@ export default function Home() {
             <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               {profileResp?.profile.perEvent.map((ev) => (
                 <div key={ev.eventId} className="coverage-line">
-                  <strong>{EVENT_LABELS[ev.eventId] ?? ev.eventId}</strong>: n={ev.nApproved}, show {ev.showRatePct}%,
-                  apps/seat {ev.applicationsPerSeat}x, top roles{" "}
+                  <strong>{EVENT_LABELS[ev.eventId] ?? ev.eventId}</strong>: n={ev.nApproved}, apps/seat{" "}
+                  {ev.applicationsPerSeat}x, top roles{" "}
                   {ev.roleMix.slice(0, 3).map(pct).join(" · ") || "no data"}
                 </div>
               ))}
@@ -492,10 +492,24 @@ function ResultCard({
   );
 }
 
+// Guests type this into a free-text Luma form field ("What is your LinkedIn profile?"),
+// so it's untrusted input: only ever render it as a clickable link if it's actually an
+// http(s) URL, never let it become a javascript: or data: href.
+function safeHttpUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 function ContactSequence({ card, idMap }: { card: RankedCandidate; idMap: IdMapEntry[] }) {
   const primaryId = card.warm_intro.via[0];
   const contact = primaryId ? idMap.find((e) => e.id === primaryId) : undefined;
   const nudge = card.nudge_text ?? card.first_line;
+  const linkedinHref = safeHttpUrl(contact?.linkedinUrl);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -506,9 +520,9 @@ function ContactSequence({ card, idMap }: { card: RankedCandidate; idMap: IdMapE
       <div className="first-line-row">
         <span>
           <strong>1. linkedin</strong>{" "}
-          {contact?.linkedinUrl ? (
+          {linkedinHref ? (
             <>
-              connect with {contact.name} <a href={contact.linkedinUrl} target="_blank" rel="noreferrer">{contact.linkedinUrl}</a>
+              connect with {contact!.name} <a href={linkedinHref} target="_blank" rel="noreferrer">{linkedinHref}</a>
             </>
           ) : (
             `no linkedin url on file for this contact, find ${contact?.name ?? "them"} via ${card.sponsor}`

@@ -56,7 +56,10 @@ export type EventAudienceProfile = {
   eventId: string;
   nApproved: number;
   nCheckedIn: number;
-  showRatePct: number;
+  // Check-in scanning isn't actually used at these events yet, so nCheckedIn is not a
+  // reliable attendance count. Never compute or claim a show rate percentage from it:
+  // that would be a fabricated-sounding number a sponsor or judge could catch out.
+  showRateTracked: false;
   applicationsPerSeat: number;
   roleMix: Share[];
   founderStageMix: Share[];
@@ -98,7 +101,7 @@ function buildEventAudienceProfile(eventId: string, guests: Guest[]): EventAudie
     eventId,
     nApproved,
     nCheckedIn,
-    showRatePct: nApproved === 0 ? 0 : Math.round((nCheckedIn / nApproved) * 1000) / 10,
+    showRateTracked: false,
     applicationsPerSeat: nApproved === 0 ? 0 : Math.round((totalRegistrations / nApproved) * 100) / 100,
     roleMix: shares(approved, (g) => g.role, nApproved),
     founderStageMix: shares(approved, (g) => g.founderStage, nApproved),
@@ -132,7 +135,7 @@ export function computeAudienceProfile(guests: Guest[], events: EventRecord[]): 
     eventId: "overall",
     nApproved: 0,
     nCheckedIn: 0,
-    showRatePct: 0,
+    showRateTracked: false,
     applicationsPerSeat: 0,
     roleMix: [],
     founderStageMix: [],
@@ -148,7 +151,6 @@ export function computeAudienceProfile(guests: Guest[], events: EventRecord[]): 
   const checkedInAll = uniqueGuests.filter((g) => g.checkedIn);
   overall.nApproved = approvedAll.length;
   overall.nCheckedIn = checkedInAll.length;
-  overall.showRatePct = overall.nApproved === 0 ? 0 : Math.round((overall.nCheckedIn / overall.nApproved) * 1000) / 10;
   overall.applicationsPerSeat = overall.nApproved === 0 ? 0 : Math.round((uniqueGuests.length / overall.nApproved) * 100) / 100;
   overall.roleMix = shares(approvedAll, (g) => g.role, overall.nApproved);
   overall.founderStageMix = shares(approvedAll, (g) => g.founderStage, overall.nApproved);
