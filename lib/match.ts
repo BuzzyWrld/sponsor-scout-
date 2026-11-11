@@ -12,6 +12,15 @@ export function joinGuestsWithConnections(guests: Guest[], connections: Connecti
   }
 
   return guests.map((g) => {
+    // Some registration forms ask company/title directly: trust that over any join or guess.
+    if (g.directCompany) {
+      return {
+        ...g,
+        company: normalizeCompany(g.directCompany),
+        title: g.directTitle,
+        companyMatchConfidence: "known" as const,
+      };
+    }
     const conn = connByUrl.get(g.personKey);
     if (conn && conn.company) {
       return { ...g, company: normalizeCompany(conn.company), title: conn.title, companyMatchConfidence: "known" as const };

@@ -46,6 +46,8 @@ export type RawGuestRow = {
   whereInvestingTime: string | null; // free text, may contain a company name
   sponsorInterest: SponsorInterestAnswer;
   newsletterConsent: boolean | null;
+  directCompany: string | null; // some forms ask company directly, skip the LinkedIn join
+  directTitle: string | null;
 };
 
 // A guest deduped across events, pre-pseudonymization.

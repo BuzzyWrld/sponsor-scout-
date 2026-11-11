@@ -33,13 +33,15 @@ type RunResponse = ProfileResponse & {
   wasQuickScout?: boolean;
 };
 
-const EVENT_IDS = ["E1", "E2", "E3", "E4", "E5"] as const;
+const EVENT_IDS = ["E1", "E2", "E3", "E4", "E5", "E6", "E7"] as const;
 const EVENT_LABELS: Record<string, string> = {
   E1: "Beyond Small Talk (Nov 3)",
   E2: "Private Capital Mixer (Nov 19)",
   E3: "Beyond Small Talk (Nov 19)",
   E4: "Beyond Gaming (Nov 23)",
   E5: "Beyond the Interview (Jan 4)",
+  E6: "DeepTech DeepDive w/ ØDX",
+  E7: "Financial Intelligence Forum",
 };
 
 function pct(share: Share) {

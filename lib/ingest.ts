@@ -5,12 +5,31 @@
 import Papa from "papaparse";
 import type { ApprovalStatus, Candidate, Connection, RawGuestRow, Role, SponsorInterestAnswer } from "./types";
 
-function fuzzyFind(headers: string[], candidates: string[]): string | null {
+// Luma's own system/tracking columns, present on every export regardless of event.
+// Never let these match a candidate: "linkedin_click_id" (an ad-tracking column, always
+// empty) would otherwise satisfy a bare "linkedin" candidate before the real question column
+// is even considered.
+const LUMA_SYSTEM_COLUMNS = new Set([
+  "guestid", "firstname", "lastname", "phonenumber", "createdat",
+  "utmsource", "utmmedium", "utmcampaign", "utmterm", "utmcontent",
+  "googleclickid", "metaclickid", "xclickid", "linkedinclickid", "tiktokclickid",
+  "redditclickid", "yandexclickid", "referrer", "referredby", "qrcodeurl",
+  "amount", "amounttax", "amountdiscount", "currency", "couponcode",
+  "ethaddress", "solanaaddress", "surveyresponserating", "surveyresponsefeedback",
+  "tickettypeid", "ticketname",
+]);
+
+function fuzzyFind(headers: string[], candidates: string[], excluded: Set<string>): string | null {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-  const normHeaders = headers.map((h) => ({ raw: h, n: norm(h) }));
+  const normHeaders = headers
+    .map((h) => ({ raw: h, n: norm(h) }))
+    .filter((h) => !LUMA_SYSTEM_COLUMNS.has(h.n) && !excluded.has(h.raw));
   for (const c of candidates) {
     const nc = norm(c);
-    const hit = normHeaders.find((h) => h.n === nc || h.n.includes(nc) || nc.includes(h.n));
+    // Only header-contains-candidate, never the reverse: a short real header like "Company"
+    // would otherwise satisfy a longer candidate phrase like "company stage" or "...interested
+    // in sponsoring" purely because it's a substring of it.
+    const hit = normHeaders.find((h) => h.n === nc || h.n.includes(nc));
     if (hit) return hit.raw;
   }
   return null;
@@ -66,12 +85,20 @@ const GUEST_FIELD_CANDIDATES: Record<string, string[]> = {
   whereInvestingTime: ["where are you investing your time", "where do you work", "current focus"],
   sponsorInterest: ["would you or your company be interested in sponsoring", "sponsor interest", "sponsoring a future event"],
   newsletterConsent: ["newsletter", "newsletter consent", "subscribe"],
+  directCompany: ["company", "what company do you work for", "organization"],
+  directTitle: ["job title", "jobtitle", "position"],
 };
 
 export function mapGuestHeaders(headers: string[]): HeaderMapping {
   const mapping: HeaderMapping = {};
+  // One header maps to at most one field: once a header is claimed, later fields in this
+  // list (directCompany/directTitle are deliberately last, since their candidates are the
+  // most generic and most likely to otherwise swallow an already-claimed column) can't reuse it.
+  const claimed = new Set<string>();
   for (const [field, candidates] of Object.entries(GUEST_FIELD_CANDIDATES)) {
-    mapping[field] = fuzzyFind(headers, candidates);
+    const hit = fuzzyFind(headers, candidates, claimed);
+    mapping[field] = hit;
+    if (hit) claimed.add(hit);
   }
   return mapping;
 }
@@ -101,6 +128,8 @@ export function parseLumaGuestCsv(
       whereInvestingTime: get("whereInvestingTime") || null,
       sponsorInterest: parseSponsorInterest(get("sponsorInterest")),
       newsletterConsent: get("newsletterConsent") ? parseBool(get("newsletterConsent")) : null,
+      directCompany: get("directCompany") || null,
+      directTitle: get("directTitle") || null,
     };
   });
 
