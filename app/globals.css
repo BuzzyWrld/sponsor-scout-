@@ -1,4 +1,6 @@
-/* Section 0 house rules: two brand colors only, square corners, no gradients, no emoji. */
+/* Section 0 house rules: two brand colors only, square corners, no gradients, no emoji.
+   Direction: editorial / brutalist. Depth comes from shadow weight and black/ivory
+   inversion, never from a third hue. Motion stages the reveal, it doesn't decorate. */
 
 :root {
   --bs-black: #121212;
@@ -11,6 +13,9 @@
   --bs-hairline-dark: #383836;
   --bs-risk: #8a2e2e;
   --bs-ok: #2e6b4f;
+  --bs-shadow: 0 1px 0 rgba(18, 18, 18, 0.05);
+  --bs-shadow-lift: 0 14px 32px -16px rgba(18, 18, 18, 0.28);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -34,55 +39,97 @@ h3,
   font-family: var(--font-inter-tight), sans-serif;
   font-weight: 800;
   text-transform: lowercase;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+  line-height: 0.95;
   margin: 0;
 }
 
 .mono {
   font-family: var(--font-plex-mono), monospace;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   font-size: 0.75rem;
 }
 
 button {
   font-family: var(--font-inter), sans-serif;
   cursor: pointer;
+  transition: transform 0.15s var(--ease), background-color 0.15s var(--ease), color 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 a {
   color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 
 .topbar {
   background: var(--bs-black);
   color: var(--bs-ivory);
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--bs-hairline-dark);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 0 rgba(255, 252, 245, 0.08);
 }
 
 .topbar .headline {
   color: var(--bs-ivory);
-  font-size: 1.5rem;
+  font-size: clamp(1.4rem, 1.1rem + 1vw, 1.9rem);
 }
 
 .topbar .mono {
   color: var(--bs-muted-light);
+  letter-spacing: 0.12em;
 }
 
 .badge {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem;
   border: 1px solid var(--bs-hairline-dark);
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+}
+
+.badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  background: currentColor;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .badge.ok {
@@ -96,21 +143,27 @@ a {
 }
 
 .page {
-  max-width: 960px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 3rem 2rem 5rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: clamp(2.5rem, 2rem + 2vw, 4rem);
+}
+
+.page > section {
+  animation: rise 0.5s var(--ease) both;
 }
 
 .section-label {
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--bs-muted-dark);
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--bs-hairline-light);
   display: block;
 }
 
@@ -123,6 +176,12 @@ a {
   flex-direction: column;
   gap: 0.5rem;
   align-items: center;
+  transition: border-color 0.15s var(--ease), background-color 0.15s var(--ease);
+}
+
+.dropzone:hover {
+  border-color: var(--bs-black);
+  background: var(--bs-ivory);
 }
 
 .dropzone.active {
@@ -145,6 +204,7 @@ a {
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.75rem;
   color: var(--bs-muted-dark);
+  line-height: 1.6;
 }
 
 .fixture-chip {
@@ -152,7 +212,7 @@ a {
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.65rem;
   letter-spacing: 0.08em;
-  padding: 0.25rem 0.5rem;
+  padding: 0.3rem 0.6rem;
   background: var(--bs-black);
   color: var(--bs-ivory);
   text-transform: uppercase;
@@ -164,42 +224,57 @@ a {
   gap: 1px;
   background: var(--bs-hairline-light);
   border: 1px solid var(--bs-hairline-light);
+  box-shadow: var(--bs-shadow);
 }
 
 .stat-cell {
   background: var(--bs-ivory);
-  padding: 0.75rem;
+  padding: 1rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  transition: background-color 0.15s var(--ease);
+}
+
+.stat-cell:hover {
+  background: var(--bs-surface-light);
 }
 
 .stat-cell .value {
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 1.1rem;
+  font-family: var(--font-inter-tight), sans-serif;
+  font-weight: 800;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
 }
 
 .stat-cell .label {
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.6rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--bs-muted-dark);
 }
 
 .run-button {
   background: var(--bs-black);
   color: var(--bs-ivory);
-  border: none;
-  padding: 1rem 1.5rem;
+  border: 1px solid var(--bs-black);
+  padding: 1.05rem 1.6rem;
   font-family: var(--font-inter-tight), sans-serif;
   font-weight: 800;
   text-transform: lowercase;
   font-size: 1rem;
+  box-shadow: var(--bs-shadow-lift);
+}
+
+.run-button:hover:not(:disabled) {
+  background: var(--bs-surface-dark);
 }
 
 .run-button:disabled {
   background: var(--bs-muted-light);
+  border-color: var(--bs-muted-light);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -207,14 +282,29 @@ a {
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.75rem;
   color: var(--bs-muted-dark);
+  margin-top: 0.75rem;
 }
 
 .portfolio-view {
-  border: 1px solid var(--bs-black);
-  padding: 1rem;
+  background: var(--bs-black);
+  color: var(--bs-ivory);
+  padding: 1.5rem 1.75rem;
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
   flex-wrap: wrap;
+  box-shadow: var(--bs-shadow-lift);
+}
+
+.portfolio-view .mono {
+  color: var(--bs-muted-light);
+}
+
+.portfolio-view > div:first-child,
+.portfolio-view > div:nth-child(2) {
+  font-family: var(--font-inter-tight), sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  text-transform: lowercase;
 }
 
 .card-grid {
@@ -223,14 +313,23 @@ a {
   gap: 1px;
   background: var(--bs-hairline-light);
   border: 1px solid var(--bs-hairline-light);
+  box-shadow: var(--bs-shadow);
 }
 
 .card {
   background: var(--bs-ivory);
-  padding: 1.25rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.75rem;
+  position: relative;
+  transition: box-shadow 0.2s var(--ease);
+  animation: rise 0.5s var(--ease) both;
+}
+
+.card:hover {
+  box-shadow: var(--bs-shadow-lift);
+  z-index: 1;
 }
 
 .card-top {
@@ -243,21 +342,28 @@ a {
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.8rem;
   color: var(--bs-muted-dark);
+  letter-spacing: 0.04em;
 }
 
 .card-sponsor {
-  font-size: 1.3rem;
+  font-size: clamp(1.4rem, 1.2rem + 0.6vw, 1.9rem);
 }
 
 .buyer-line {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: var(--bs-muted-dark);
+  max-width: 48ch;
 }
 
 .fit-bullets {
   margin: 0;
   padding-left: 1.1rem;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.fit-bullets li::marker {
+  color: var(--bs-muted-light);
 }
 
 .event-pill {
@@ -267,22 +373,23 @@ a {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border: 1px solid var(--bs-black);
-  padding: 0.25rem 0.5rem;
+  padding: 0.3rem 0.6rem;
   align-self: flex-start;
 }
 
 .warm-block {
   border-left: 3px solid var(--bs-black);
-  padding-left: 0.75rem;
+  padding: 0.3rem 0 0.3rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
 .warm-strength {
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-family: var(--font-inter-tight), sans-serif;
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .first-line-row {
@@ -290,19 +397,29 @@ a {
   justify-content: space-between;
   align-items: center;
   background: var(--bs-surface-light);
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.85rem;
   font-size: 0.9rem;
   gap: 0.75rem;
+  transition: background-color 0.15s var(--ease);
+}
+
+.first-line-row:hover {
+  background: #ece6d6;
 }
 
 .copy-btn {
   background: transparent;
   border: 1px solid var(--bs-black);
-  padding: 0.25rem 0.6rem;
+  padding: 0.3rem 0.65rem;
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.65rem;
   text-transform: uppercase;
   flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  background: var(--bs-black);
+  color: var(--bs-ivory);
 }
 
 .chip-row {
@@ -315,9 +432,15 @@ a {
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.6rem;
   text-transform: uppercase;
-  padding: 0.2rem 0.4rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid var(--bs-hairline-light);
   color: var(--bs-muted-dark);
+  transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.chip:hover {
+  border-color: var(--bs-black);
+  color: var(--bs-black);
 }
 
 .chip.risk {
@@ -330,13 +453,13 @@ a {
   font-size: 0.85rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .toggle-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -350,8 +473,13 @@ a {
 .export-btn {
   background: transparent;
   border: 1px solid var(--bs-black);
-  padding: 0.5rem 0.9rem;
+  padding: 0.6rem 1rem;
   font-family: var(--font-plex-mono), monospace;
   font-size: 0.7rem;
   text-transform: uppercase;
+}
+
+.export-btn:hover:not(:disabled) {
+  background: var(--bs-black);
+  color: var(--bs-ivory);
 }

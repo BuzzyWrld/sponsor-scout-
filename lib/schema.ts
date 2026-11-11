@@ -32,6 +32,10 @@ export const RankedCandidateSchema = z.object({
     path: z.string(),
   }),
   first_line: z.string(),
+  // A short, SMS-length version of first_line for the nudge-text step of the contact
+  // sequence. Optional so older cached results (generated before this field existed)
+  // still validate.
+  nudge_text: z.string().optional(),
   risks: z.array(z.string()),
   missing_data: z.array(z.string()),
 });
@@ -56,6 +60,10 @@ export const ScoutOutputSchema = z.object({
   excluded: z.array(ExcludedCandidateSchema),
   portfolio_view: PortfolioViewSchema,
   data_gaps: z.array(z.string()),
+  // Lightweight sourcing: company names the model thinks are worth researching as sponsors,
+  // from general category knowledge, not from the candidates list it was given. These are
+  // unverified suggestions, not ranked picks: never merge them into `ranked`.
+  candidates_worth_scouting: z.array(z.string()).optional(),
 });
 
 export type ScoutOutput = z.infer<typeof ScoutOutputSchema>;

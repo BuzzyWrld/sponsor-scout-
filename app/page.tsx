@@ -368,7 +368,14 @@ export default function Home() {
 
             <div className="card-grid">
               {runResp.scoutOutput.ranked.map((r, i) => (
-                <ResultCard key={r.candidate_id} rank={i + 1} card={r} idMap={runResp.idMap} showIdsOnly={showIdsOnly} />
+                <ResultCard
+                  key={r.candidate_id}
+                  rank={i + 1}
+                  card={r}
+                  idMap={runResp.idMap}
+                  showIdsOnly={showIdsOnly}
+                  delay={i * 0.06}
+                />
               ))}
             </div>
 
@@ -389,6 +396,19 @@ export default function Home() {
                 {runResp.scoutOutput.data_gaps.map((g, i) => (
                   <div key={i}>{g}</div>
                 ))}
+              </div>
+            )}
+
+            {runResp.scoutOutput.candidates_worth_scouting && runResp.scoutOutput.candidates_worth_scouting.length > 0 && (
+              <div className="data-gaps" style={{ marginTop: "1rem" }}>
+                <span className="section-label">worth scouting next (ai suggested, unverified)</span>
+                <div className="chip-row">
+                  {runResp.scoutOutput.candidates_worth_scouting.map((name, i) => (
+                    <span key={i} className="chip">
+                      {name}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -416,21 +436,26 @@ function ResultCard({
   card,
   idMap,
   showIdsOnly,
+  delay = 0,
 }: {
   rank: number;
   card: RankedCandidate;
   idMap: IdMapEntry[];
   showIdsOnly: boolean;
+  delay?: number;
 }) {
   const path = showIdsOnly ? card.warm_intro.path : rehydrateText(card.warm_intro.path, idMap);
   const via = showIdsOnly ? card.warm_intro.via : card.warm_intro.via.map((id) => rehydrateText(id, idMap));
 
   return (
-    <div className="card">
+    <div className="card" style={{ animationDelay: `${delay}s` }}>
       <div className="card-top">
         <span className="card-rank">
           #{String(rank).padStart(2, "0")} · {card.score}/100 · {card.confidence.toUpperCase()}
         </span>
+      </div>
+      <div style={{ height: 3, background: "var(--bs-hairline-light)" }}>
+        <div style={{ height: "100%", width: `${card.score}%`, background: "var(--bs-black)" }} />
       </div>
       <div className="card-sponsor headline">{card.sponsor}</div>
       <div className="buyer-line">{card.buyer}</div>
@@ -448,12 +473,7 @@ function ResultCard({
         <span>{path}</span>
         {via.length > 0 && <span className="coverage-line">via {via.join(", ")}</span>}
       </div>
-      <div className="first-line-row">
-        <span>{card.first_line}</span>
-        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(card.first_line)}>
-          copy
-        </button>
-      </div>
+      <ContactSequence card={card} idMap={idMap} />
       {(card.risks.length > 0 || card.missing_data.length > 0) && (
         <div className="chip-row">
           {card.risks.map((r, i) => (
@@ -468,6 +488,55 @@ function ResultCard({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function ContactSequence({ card, idMap }: { card: RankedCandidate; idMap: IdMapEntry[] }) {
+  const primaryId = card.warm_intro.via[0];
+  const contact = primaryId ? idMap.find((e) => e.id === primaryId) : undefined;
+  const nudge = card.nudge_text ?? card.first_line;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+      <span className="section-label" style={{ marginBottom: 0 }}>
+        contact sequence
+      </span>
+
+      <div className="first-line-row">
+        <span>
+          <strong>1. linkedin</strong>{" "}
+          {contact?.linkedinUrl ? (
+            <>
+              connect with {contact.name} <a href={contact.linkedinUrl} target="_blank" rel="noreferrer">{contact.linkedinUrl}</a>
+            </>
+          ) : (
+            `no linkedin url on file for this contact, find ${contact?.name ?? "them"} via ${card.sponsor}`
+          )}
+        </span>
+      </div>
+
+      <div className="first-line-row">
+        <span>
+          <strong>2. email</strong>{" "}
+          {contact?.email ? `to ${contact.name} <${contact.email}>: ` : "no email on file, send via LinkedIn connection note instead: "}
+          {card.first_line}
+        </span>
+        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(card.first_line)}>
+          copy
+        </button>
+      </div>
+
+      <div className="first-line-row">
+        <span>
+          <strong>3. nudge text</strong>{" "}
+          {contact?.phone ? `to ${contact.name} <${contact.phone}>: ` : "no phone on file (only collected for your own attendees), skip or follow up on LinkedIn: "}
+          {nudge}
+        </span>
+        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(nudge)}>
+          copy
+        </button>
+      </div>
     </div>
   );
 }

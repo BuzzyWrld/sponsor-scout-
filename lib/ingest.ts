@@ -10,7 +10,7 @@ import type { ApprovalStatus, Candidate, Connection, RawGuestRow, Role, SponsorI
 // empty) would otherwise satisfy a bare "linkedin" candidate before the real question column
 // is even considered.
 const LUMA_SYSTEM_COLUMNS = new Set([
-  "guestid", "firstname", "lastname", "phonenumber", "createdat",
+  "guestid", "firstname", "lastname", "createdat",
   "utmsource", "utmmedium", "utmcampaign", "utmterm", "utmcontent",
   "googleclickid", "metaclickid", "xclickid", "linkedinclickid", "tiktokclickid",
   "redditclickid", "yandexclickid", "referrer", "referredby", "qrcodeurl",
@@ -74,6 +74,7 @@ export type HeaderMapping = Record<string, string | null>;
 const GUEST_FIELD_CANDIDATES: Record<string, string[]> = {
   name: ["name", "guest name", "full name"],
   email: ["email", "email address"],
+  phone: ["phone number", "phone"],
   approvalStatus: ["approval status", "status", "ticket status"],
   checkedInAt: ["checked in at", "check in time", "checked in"],
   linkedinUrl: ["linkedin", "linkedin url", "linkedin profile"],
@@ -117,6 +118,7 @@ export function parseLumaGuestCsv(
       eventId,
       name: get("name") ?? "",
       email: get("email") || null,
+      phone: get("phone") || null,
       linkedinUrl: get("linkedinUrl") || null,
       approvalStatus: parseApprovalStatus(get("approvalStatus")),
       checkedIn: Boolean(get("checkedInAt")?.trim()) || parseApprovalStatus(get("approvalStatus")) === "checked_in",
@@ -149,6 +151,7 @@ export function parseLinkedInConnectionsCsv(csvText: string): Connection[] {
       linkedinUrl: row["URL"],
       firstName: row["First Name"] ?? "",
       lastName: row["Last Name"] ?? "",
+      email: row["Email Address"] || null,
       company: row["Company"] || null,
       title: row["Position"] || null,
       connectedOn: row["Connected On"] || null,

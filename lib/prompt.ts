@@ -52,6 +52,8 @@ RULES
 - Use only facts in the inputs plus widely known, general facts about what a company sells. Never invent contacts, budgets, past sponsorships or numbers.
 - Refer to people only by their IDs (G-xxx, C-xxx). Never guess names.
 - The first_line is for Buzzy to send. Founder audience voice: direct, specific, a little funny, never selling. Capital audience voice: calm, numbers first, curation is the product. One or two sentences. Lead with the audience fact that matters to that sponsor. Never name or describe an attendee in the first_line: guest identities are never disclosed to sponsors without double opt in.
+- nudge_text is a second, shorter message: SMS length (under 160 characters), same voice and same rule against naming or describing an attendee, for a quick follow up nudge days after the first_line was sent.
+- candidates_worth_scouting is optional and separate from ranked and excluded: 0 to 5 company names you think could be worth researching as sponsors, based on general knowledge of what kind of company sponsors a founder and investor audience like this one, that are not already in the candidates list you were given. These are suggestions to go research, not scored or warm path matched. Never put a company here that is already in candidates.
 - Banned words in any output: networking event, exclusive, VIP, synergy, thought leaders, disrupt, unicorn, pitch night, shark tank. Banned names: b.s society, (bs) society, Intentio, Artifice.
 - Never use em dashes or en dashes. Use commas, periods, parentheses or colons.
 - Do not write decks, proposals or full emails.
@@ -71,13 +73,15 @@ OUTPUT SCHEMA
       "recommended_event": { "event_id": "string", "why": "string", "tier": "drinks_in_kind | episode | series", "lead_time_ok": true },
       "warm_intro": { "flag": true, "strength": "A | B | C | D", "via": ["G-014"], "path": "one sentence: who asks whom for what" },
       "first_line": "string",
+      "nudge_text": "string, under 160 characters",
       "risks": ["string"],
       "missing_data": ["string"]
     }
   ],
   "excluded": [ { "candidate_id": "string", "sponsor": "string", "reason": "string" } ],
   "portfolio_view": { "fastest_cash": "candidate_id", "series_anchor": "candidate_id", "note": "one sentence" },
-  "data_gaps": ["what data would most improve this ranking next time"]
+  "data_gaps": ["what data would most improve this ranking next time"],
+  "candidates_worth_scouting": ["optional, 0 to 5 company names worth researching, not already in candidates"]
 }`;
 
 export function buildSystemPrompt(blocks: PromptBlocks): string {

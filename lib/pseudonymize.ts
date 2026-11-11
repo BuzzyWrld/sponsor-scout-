@@ -41,7 +41,7 @@ export function pseudonymize(guests: Guest[], connections: Connection[]): Pseudo
   const safeGuests: SafeGuest[] = guests.map((g, i) => {
     const id = `G-${String(i + 1).padStart(3, "0")}`;
     guestIdByPersonKey.set(g.personKey, id);
-    idMap.push({ id, kind: "guest", name: g.name, email: g.email, linkedinUrl: g.linkedinUrl });
+    idMap.push({ id, kind: "guest", name: g.name, email: g.email, phone: g.phone, linkedinUrl: g.linkedinUrl });
     return {
       id,
       role: g.role,
@@ -64,7 +64,8 @@ export function pseudonymize(guests: Guest[], connections: Connection[]): Pseudo
       id,
       kind: "connection",
       name: `${c.firstName} ${c.lastName}`.trim(),
-      email: null,
+      email: c.email,
+      phone: null,
       linkedinUrl: c.linkedinUrl,
     });
     return { id, company: c.company, title: c.title };

@@ -35,6 +35,7 @@ export type RawGuestRow = {
   eventId: string;
   name: string;
   email: string | null;
+  phone: string | null;
   linkedinUrl: string | null;
   approvalStatus: ApprovalStatus;
   checkedIn: boolean;
@@ -64,6 +65,7 @@ export type Connection = {
   linkedinUrl: string;
   firstName: string;
   lastName: string;
+  email: string | null; // LinkedIn's export column is usually blank unless the person made it public
   company: string | null;
   title: string | null;
   connectedOn: string | null;
@@ -96,5 +98,6 @@ export type IdMapEntry = {
   kind: "guest" | "connection";
   name: string;
   email: string | null;
+  phone: string | null; // only ever populated for guests; LinkedIn exports never include phone
   linkedinUrl: string | null;
 };
