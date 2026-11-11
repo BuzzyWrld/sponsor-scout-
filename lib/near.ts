@@ -4,10 +4,17 @@
 
 import { readFileSync } from "node:fs";
 import OpenAI from "openai";
+import { Agent, setGlobalDispatcher } from "undici";
 import { ScoutOutputSchema, type ScoutOutput } from "./schema";
 import { sanitizeDeep } from "./sanitize";
 
 const BASE_URL = "https://cloud-api.near.ai/v1";
+const REQUEST_TIMEOUT_MS = 600_000; // 10 minutes: TEE inference on a large ranking prompt is slow,
+
+// Node's default undici dispatcher times out waiting for response headers after 5 minutes,
+// well before this model finishes a complex ranking call. Raise it process-wide so the
+// OpenAI client's own (longer) timeout is the one that actually governs.
+setGlobalDispatcher(new Agent({ headersTimeout: REQUEST_TIMEOUT_MS, bodyTimeout: REQUEST_TIMEOUT_MS }));
 
 type ModelChoice = {
   modelId: string;
@@ -25,7 +32,7 @@ export function loadModelChoice(): ModelChoice {
 function getClient(): OpenAI {
   const apiKey = process.env.NEARAI_API_KEY;
   if (!apiKey) throw new Error("NEARAI_API_KEY is not set");
-  return new OpenAI({ apiKey, baseURL: BASE_URL });
+  return new OpenAI({ apiKey, baseURL: BASE_URL, timeout: REQUEST_TIMEOUT_MS });
 }
 
 export type ScoutRunResult =

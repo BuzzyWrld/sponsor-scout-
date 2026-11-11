@@ -9,7 +9,7 @@ import { EVENTS } from "@/lib/events";
 import { buildSystemPrompt, buildUserMessage, OFFER } from "@/lib/prompt";
 import { runScout } from "@/lib/near";
 
-export const maxDuration = 120; // TEE inference can take 20 to 60 seconds, section 3
+export const maxDuration = 600; // a full 20-candidate ranking call can take several minutes on this model
 
 async function writeUploadedFiles(form: FormData) {
   mkdirSync("data/raw", { recursive: true });
@@ -39,11 +39,12 @@ async function writeUploadedFiles(form: FormData) {
 
 export async function POST(req: Request) {
   try {
-    const contentType = req.headers.get("content-type") ?? "";
+    const form = await req.formData();
+    const mode = (form.get("mode") as string) === "run" ? "run" : "profile";
     let mappingNotes: string[] = ["using existing data/raw/ (fixtures or a previous upload)"];
 
-    if (contentType.includes("multipart/form-data")) {
-      const form = await req.formData();
+    const hasFiles = [...form.keys()].some((k) => form.get(k) instanceof File);
+    if (hasFiles) {
       mappingNotes = await writeUploadedFiles(form);
     }
 
@@ -92,6 +93,19 @@ export async function POST(req: Request) {
     );
     const matches = rehydrateMatches(rawMatches, guestIdByPersonKey, connectionIdByUrl);
     const profile = computeAudienceProfile(guestsJoined, EVENTS);
+
+    if (mode === "profile") {
+      return NextResponse.json({
+        mappingNotes,
+        perEventMapping,
+        coverage,
+        profile,
+        events: EVENTS,
+        guestCount: guestsJoined.length,
+        connectionCount: connections.length,
+        candidateCount: candidates.length,
+      });
+    }
 
     const systemPrompt = buildSystemPrompt({
       audienceProfileJson: JSON.stringify(profile),
