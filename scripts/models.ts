@@ -105,12 +105,18 @@ async function main() {
     const fa = family(a.modelId);
     const fb = family(b.modelId);
     if (fa !== fb) return fa - fb;
-    const flashA = isFlash(a.modelId) ? 1 : 0;
-    const flashB = isFlash(b.modelId) ? 1 : 0;
-    if (flashA !== flashB) return flashA - flashB; // prefer non-flash (full model)
+    // Prefer native json_mode/structured_outputs first: empirically, this prompt's
+    // 20-candidate, 8-step scoring method sends non-structured-output "full" reasoning
+    // models into tens of thousands of reasoning tokens before they ever emit JSON
+    // (measured: z-ai/glm-5.3 hit a 30000 token ceiling on reasoning alone, finish_reason
+    // "length", zero content). A flash/distilled model with native structured output
+    // is more reliable here than a larger model that reasons indefinitely.
     const structA = supportsStructured(a) ? 0 : 1;
     const structB = supportsStructured(b) ? 0 : 1;
-    if (structA !== structB) return structA - structB; // prefer native structured output
+    if (structA !== structB) return structA - structB;
+    const flashA = isFlash(a.modelId) ? 1 : 0;
+    const flashB = isFlash(b.modelId) ? 1 : 0;
+    if (flashA !== flashB) return flashA - flashB; // prefer non-flash when structured support ties
     return b.metadata.contextLength - a.metadata.contextLength;
   });
 

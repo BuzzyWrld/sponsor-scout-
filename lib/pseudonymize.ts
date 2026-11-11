@@ -87,13 +87,7 @@ export function rehydrateMatches(
   }));
 }
 
-// Local-view-only: turn G-xxx / C-xxx back into real names. Never call this on anything
-// that will be sent to the model or printed in a shared/screen-shared context without
-// the "show IDs only" toggle being off.
-export function rehydrateText(text: string, idMap: IdMapEntry[]): string {
-  const byId = new Map(idMap.map((e) => [e.id, e.name]));
-  return text.replace(/\b([GC]-\d{3})\b/g, (match) => byId.get(match) ?? match);
-}
+export { rehydrateText } from "./rehydrate";
 
 export function persistIdMap(idMap: IdMapEntry[]): void {
   mkdirSync("data/private", { recursive: true });
