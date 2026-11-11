@@ -81,7 +81,7 @@ async function main() {
     checks.push({ name: "T2 QuickCash Advance flagged for compliance", pass: hasComplianceRisk, detail: `ranked=${idx >= 0}, risks=${JSON.stringify(entry?.risks)}` });
   }
 
-  // T3: Fulton Bank, if recommended for the series tier, must land on an event with lead time >= 45 days
+  // T3: Fulton Bank, if recommended for presenting_partner, must land on an event with lead time >= 30 days
   {
     const id = idOf("Fulton Bank");
     const idx = rankIndex(id);
@@ -89,8 +89,8 @@ async function main() {
     const rec = entry?.recommended_event;
     const event = rec ? EVENTS.find((e) => e.id === rec.event_id) : undefined;
     const daysOut = event && event.daysOut !== "past" ? event.daysOut : -1;
-    const pass = !rec || rec.tier !== "series" || daysOut >= 45;
-    checks.push({ name: "T3 Fulton Bank series tier respects 45 day lead time", pass, detail: `tier=${rec?.tier}, event=${rec?.event_id}, daysOut=${daysOut}, lead_time_ok=${rec?.lead_time_ok}` });
+    const pass = !rec || rec.tier !== "presenting_partner" || daysOut >= 30;
+    checks.push({ name: "T3 Fulton Bank presenting_partner respects 30 day lead time", pass, detail: `tier=${rec?.tier}, event=${rec?.event_id}, daysOut=${daysOut}, lead_time_ok=${rec?.lead_time_ok}` });
   }
 
   // T4: Artifice Collectors Club excluded

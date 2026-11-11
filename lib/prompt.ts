@@ -41,18 +41,18 @@ METHOD (follow in order)
    B = an attendee works at the candidate, or an attendee answered Yes to sponsoring and their company is the candidate
    C = a 1st degree network connection works at the candidate, no attendee tie
    D = no known tie, cold outreach
-   Prefer senior contacts (marketing, partnerships, community, developer relations, startup programs, founders) over junior ones. Name the IDs. If the best path is a person who is not the decision maker, say "ask G-014 for an intro to the head of startup partnerships", not "pitch G-014".
+   The real decision makers at a sponsor are Head of Partnerships, Field or Event Marketing, Community, Platform (at a VC), or Business Development (at a law firm or services company). Avoid generic marketing inboxes and C-suite at large companies: they do not own event sponsorship budget. Prefer senior contacts over junior ones within that set. Name the IDs. If the best path is a person who is not the decision maker, say "ask G-014 for an intro to the head of partnerships", not "pitch G-014".
 4. SPONSORSHIP PRECEDENT AND BUDGET (15 points). Credit only evidence in the input (evidence_of_sponsoring, category norms you can state generally such as "startup programs typically fund community events"). Never invent a past sponsorship. If evidence is missing, write "unverified" and put "confirm they sponsor community events" in missing_data.
-5. EVENT AND TIMING FIT (15 points). Pick the event whose audience mix best matches the buyer. Then check lead time against the offer: drinks or in kind needs 7 plus days, episode 21 plus, series 45 plus. If the best event is too soon for the right tier, recommend the right tier on the next fitting event and say so. Events 8 days out can only realistically close drinks or in kind.
-6. STRATEGIC VALUE (10 points). Higher if the candidate could own a numbered series long term, lends credibility that attracts other sponsors, or brings its own audience.
+5. EVENT AND TIMING FIT (15 points). Pick the event whose audience mix best matches the buyer. Then check lead time against the offer: in_kind_partner needs 7 plus days, event_partner 14 plus, presenting_partner 30 plus. If the best event is too soon for the right tier, recommend the right tier on the next fitting event and say so. Events 8 days out can only realistically close in_kind_partner.
+6. STRATEGIC VALUE (10 points). Higher if the candidate could grow into a presenting_partner long term, lends credibility that attracts other sponsors, or brings its own audience.
 7. SCORE = sum of the five, 0 to 100. Confidence = high only if ICP overlap is backed by n of 20 or more and the warm path is A or B. Low if key fields are missing.
-8. PORTFOLIO VIEW. Name one "fastest cash" pick (most likely to say yes within 2 weeks, usually a warm drinks or episode deal) and one "series anchor" pick (best long term owner of a numbered series).
+8. PORTFOLIO VIEW. Name one "fastest cash" pick (most likely to say yes within 2 weeks, usually a warm in_kind_partner or event_partner deal) and one "anchor" pick (best long term presenting_partner).
 
 RULES
 - Use only facts in the inputs plus widely known, general facts about what a company sells. Never invent contacts, budgets, past sponsorships or numbers.
 - Refer to people only by their IDs (G-xxx, C-xxx). Never guess names.
-- The first_line is for Buzzy to send. Founder audience voice: direct, specific, a little funny, never selling. Capital audience voice: calm, numbers first, curation is the product. One or two sentences. Lead with the audience fact that matters to that sponsor. Never name or describe an attendee in the first_line: guest identities are never disclosed to sponsors without double opt in.
-- nudge_text is a second, shorter message: SMS length (under 160 characters), same voice and same rule against naming or describing an attendee, for a quick follow up nudge days after the first_line was sent.
+- The first_line is for Buzzy to send, in Beyond Strangers' real outreach voice: direct, signal led (open with a specific, real reason you are reaching out to this company, drawn from evidence_of_sponsoring or a real audience number), confident but not salesy, "no pitch fests" energy. Close with a low friction ask (a short call, not a meeting). One or two sentences. Never name or describe an attendee in the first_line: guest identities are never disclosed to sponsors without double opt in.
+- nudge_text is a second, shorter message in the same voice: a day 3 bump with one new proof point (a real number from audience_profile), under 160 characters, same rule against naming or describing an attendee.
 - candidates_worth_scouting is optional and separate from ranked and excluded: 0 to 5 company names you think could be worth researching as sponsors, based on general knowledge of what kind of company sponsors a founder and investor audience like this one, that are not already in the candidates list you were given. These are suggestions to go research, not scored or warm path matched. Never put a company here that is already in candidates.
 - Banned words in any output: networking event, exclusive, VIP, synergy, thought leaders, disrupt, unicorn, pitch night, shark tank. Banned names: b.s society, (bs) society, Intentio, Artifice.
 - Never use em dashes or en dashes. Use commas, periods, parentheses or colons.
@@ -70,7 +70,7 @@ OUTPUT SCHEMA
       "confidence": "high | medium | low",
       "buyer": "who at our events this sponsor actually sells to",
       "fit_reasoning": ["2 to 3 bullets, each with a real number and its n"],
-      "recommended_event": { "event_id": "string", "why": "string", "tier": "drinks_in_kind | episode | series", "lead_time_ok": true },
+      "recommended_event": { "event_id": "string", "why": "string", "tier": "in_kind_partner | event_partner | presenting_partner", "lead_time_ok": true },
       "warm_intro": { "flag": true, "strength": "A | B | C | D", "via": ["G-014"], "path": "one sentence: who asks whom for what" },
       "first_line": "string",
       "nudge_text": "string, under 160 characters",
@@ -79,7 +79,7 @@ OUTPUT SCHEMA
     }
   ],
   "excluded": [ { "candidate_id": "string", "sponsor": "string", "reason": "string" } ],
-  "portfolio_view": { "fastest_cash": "candidate_id", "series_anchor": "candidate_id", "note": "one sentence" },
+  "portfolio_view": { "fastest_cash": "candidate_id", "anchor_partner": "candidate_id", "note": "one sentence" },
   "data_gaps": ["what data would most improve this ranking next time"],
   "candidates_worth_scouting": ["optional, 0 to 5 company names worth researching, not already in candidates"]
 }`;
@@ -98,11 +98,28 @@ export function buildUserMessage(date: string): string {
   return `Rank the candidates. Today is ${date}. Return 5 to 8 ranked picks.`;
 }
 
-// Section 4 offer block: tiers exist, prices are not set yet. The tool outputs tiers, not prices.
+// Real packages from the Sponsor Outreach Playbook (Notion, adjust after first 3 calls).
 export const OFFER = {
   tiers: [
-    { tier: "drinks_in_kind", description: "Product, venue, bar tab, swag.", leadTimeDays: 7 },
-    { tier: "episode", description: "Beyond the Interview #02, presented by [sponsor].", leadTimeDays: 21 },
-    { tier: "series", description: "One sponsor owns a numbered series across episodes.", leadTimeDays: 45 },
+    {
+      tier: "in_kind_partner",
+      description: "Product + $500 to $1K. Bar or sampling placement, logo on Luma page, 1 IG story, guest list opt-ins.",
+      priceUsd: "500 to 1000",
+      leadTimeDays: 7,
+    },
+    {
+      tier: "event_partner",
+      description:
+        "$1.5K to $3K. Everything in in_kind_partner plus a 2 minute stage mention, 2 guest invites, post-event attendee list (opt-in).",
+      priceUsd: "1500 to 3000",
+      leadTimeDays: 14,
+    },
+    {
+      tier: "presenting_partner",
+      description:
+        "$3K to $5K. \"Beyond X presented by Brand\", a speaker or panel seat, recap content, first right on the next event.",
+      priceUsd: "3000 to 5000",
+      leadTimeDays: 30,
+    },
   ],
 };

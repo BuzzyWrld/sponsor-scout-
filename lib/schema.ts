@@ -22,7 +22,7 @@ export const RankedCandidateSchema = z.object({
   recommended_event: z.object({
     event_id: z.string(),
     why: z.string(),
-    tier: z.enum(["drinks_in_kind", "episode", "series"]),
+    tier: z.enum(["in_kind_partner", "event_partner", "presenting_partner"]),
     lead_time_ok: z.boolean(),
   }),
   warm_intro: z.object({
@@ -48,7 +48,7 @@ export const ExcludedCandidateSchema = z.object({
 
 export const PortfolioViewSchema = z.object({
   fastest_cash: z.string(),
-  series_anchor: z.string(),
+  anchor_partner: z.string(),
   note: z.string(),
 });
 

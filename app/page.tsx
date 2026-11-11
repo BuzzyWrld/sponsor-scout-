@@ -357,8 +357,8 @@ export default function Home() {
                 <div>{findSponsor(runResp.scoutOutput, runResp.scoutOutput.portfolio_view.fastest_cash)}</div>
               </div>
               <div>
-                <span className="mono">series anchor</span>
-                <div>{findSponsor(runResp.scoutOutput, runResp.scoutOutput.portfolio_view.series_anchor)}</div>
+                <span className="mono">anchor partner</span>
+                <div>{findSponsor(runResp.scoutOutput, runResp.scoutOutput.portfolio_view.anchor_partner)}</div>
               </div>
               <div style={{ flex: 1 }}>
                 <span className="mono">note</span>
