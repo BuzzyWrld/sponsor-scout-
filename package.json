@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "models": "tsx scripts/models.ts",
-    "fixtures": "tsx scripts/fixtures.ts"
+    "fixtures": "tsx scripts/fixtures.ts",
+    "scout:fixtures": "tsx scripts/scout-fixtures.ts"
   },
   "dependencies": {
     "next": "16.4.6",

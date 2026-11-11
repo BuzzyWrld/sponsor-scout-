@@ -11,7 +11,7 @@ import { dedupeGuestsAcrossEvents } from "../lib/normalize";
 import { coverageReport, joinGuestsWithConnections, matchCandidates } from "../lib/match";
 import { persistIdMap, pseudonymize, rehydrateMatches } from "../lib/pseudonymize";
 import { computeAudienceProfile } from "../lib/profile";
-import type { EventRecord } from "../lib/types";
+import { EVENTS } from "../lib/events";
 
 // --- deterministic PRNG so demo reruns are stable (mulberry32) ---
 function mulberry32(seed: number) {
@@ -26,15 +26,6 @@ function mulberry32(seed: number) {
 const rand = mulberry32(42);
 const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
 const chance = (p: number) => rand() < p;
-
-// --- events (section 4 table, verbatim) ---
-const EVENTS: EventRecord[] = [
-  { id: "E1", title: "Beyond Small Talk: Tech Mixer", date: "2026-11-03", daysOut: "past", internalFormat: "The Weekly", visibility: "public", venue: "The Rose, Chelsea" },
-  { id: "E2", title: "Beyond the Room · Private Capital Mixer & Panel", date: "2026-11-19", daysOut: 8, internalFormat: "Founders x Investors", visibility: "public", venue: "Fushimi Times Square" },
-  { id: "E3", title: "Beyond Small Talk: Tech Mixer", date: "2026-11-19", daysOut: 8, internalFormat: "The Weekly", visibility: "public", venue: "The Rose, Chelsea" },
-  { id: "E4", title: "Beyond Gaming: Techgiving", date: "2026-11-23", daysOut: 12, internalFormat: "Mixer, themed", visibility: "private", venue: "Long Island City" },
-  { id: "E5", title: "Beyond the Interview: No More Ghosting", date: "2027-01-04", daysOut: 54, internalFormat: "Career night", visibility: "private", venue: "TBD" },
-];
 
 const ROLES = ["Founder", "Engineer", "Designer", "PM", "Operator", "Investor", "Student", "Other"] as const;
 const ROLE_WEIGHTS = [0.4, 0.2, 0.1, 0.08, 0.1, 0.08, 0.02, 0.02];
@@ -132,7 +123,7 @@ function makeGuest(eventId: string, overrides: Partial<GuestRawRow> = {}): Guest
     "Would you or your company be interested in sponsoring a future event?": weightedSponsorAnswer() ?? "",
     "Newsletter Consent": chance(0.6) ? "Yes" : "No",
   };
-  return { ...base, ...overrides };
+  return { ...base, ...overrides } as GuestRawRow;
 }
 
 // --- T1: a guest works at MongoDB, checked in, answered Yes to sponsoring ---
