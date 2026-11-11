@@ -146,7 +146,7 @@ async function main() {
   const completion = await client.chat.completions.create({
     model: choice.modelId,
     messages: [{ role: "user", content: "Reply with exactly one word: ok" }],
-    max_tokens: 10,
+    max_tokens: 300, // reasoning token spend is non-deterministic on this model, leave margin
   });
   const latencyMs = Date.now() - start;
   console.log("Smoke test reply:", completion.choices[0]?.message?.content);

@@ -57,7 +57,7 @@ export async function runScout(systemPrompt: string, userMessage: string): Promi
       model: model.modelId,
       messages,
       temperature: 0.2,
-      max_tokens: 4000,
+      max_tokens: 12000, // this model spends tokens on reasoning_content before the JSON answer
       ...(supportsJsonMode ? { response_format: { type: "json_object" as const } } : {}),
     });
 
