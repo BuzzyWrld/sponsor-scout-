@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# sponsor scout: raw guest/connections/candidate data and derived id maps, never commit
+/data/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
